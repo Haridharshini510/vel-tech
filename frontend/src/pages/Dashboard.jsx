@@ -7,10 +7,12 @@ import {
 import {
   Briefcase, GraduationCap, Building2, Cpu, AlertTriangle,
   TrendingUp, RefreshCw, Database, ArrowRight, MapPin, Calendar,
+  Zap,
 } from 'lucide-react'
 import {
   getStats, getTrendingSkills, getSourceStats, getJobTrends,
   getCategoryDistribution, getRecentJobs, syncBroadJobs,
+  getEmergingSkills, getCurriculumOverview,
 } from '../lib/api'
 
 const BAR_COLORS = [
@@ -26,6 +28,8 @@ export default function Dashboard() {
   const [trends, setTrends] = useState([])
   const [categories, setCategories] = useState([])
   const [recentJobs, setRecentJobs] = useState([])
+  const [emerging, setEmerging] = useState([])
+  const [curriculumOverview, setCurriculumOverview] = useState(null)
   const [loading, setLoading] = useState(true)
   const [syncing, setSyncing] = useState(false)
   const [syncResult, setSyncResult] = useState(null)
@@ -38,14 +42,18 @@ export default function Dashboard() {
       getJobTrends(),
       getCategoryDistribution(),
       getRecentJobs(1, 5),
+      getEmergingSkills(),
+      getCurriculumOverview(),
     ])
-      .then(([s, t, src, tr, cat, rj]) => {
+      .then(([s, t, src, tr, cat, rj, em, co]) => {
         setStats(s)
         setTrending(t)
         setSources(src)
         setTrends(tr)
         setCategories(cat)
         setRecentJobs(rj.jobs || [])
+        setEmerging(em || [])
+        setCurriculumOverview(co)
       })
       .catch(console.error)
       .finally(() => setLoading(false))
@@ -225,6 +233,82 @@ export default function Dashboard() {
             ))}
           </div>
         </div>
+      </div>
+
+      {/* Curriculum Overview */}
+      {curriculumOverview && (
+        <div className="bg-white rounded-xl border border-gray-200 p-6 mb-8">
+          <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+            <GraduationCap className="w-5 h-5 text-amber-500" /> Curriculum Overview
+          </h2>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+            <div className="bg-amber-50 rounded-lg p-4 text-center">
+              <p className="text-2xl font-bold text-amber-700">{curriculumOverview.total_courses ?? 0}</p>
+              <p className="text-sm text-amber-600 mt-1">Total Courses</p>
+            </div>
+            <div className="bg-green-50 rounded-lg p-4 text-center">
+              <p className="text-2xl font-bold text-green-700">{curriculumOverview.average_relevance != null ? `${Math.round(curriculumOverview.average_relevance)}%` : 'N/A'}</p>
+              <p className="text-sm text-green-600 mt-1">Avg Relevance</p>
+            </div>
+            <div className="bg-red-50 rounded-lg p-4 text-center">
+              <p className="text-2xl font-bold text-red-700">{curriculumOverview.courses_needing_review ?? 0}</p>
+              <p className="text-sm text-red-600 mt-1">Need Review</p>
+            </div>
+          </div>
+          {curriculumOverview.courses && curriculumOverview.courses.length > 0 && (
+            <div className="space-y-3">
+              {curriculumOverview.courses.map((course) => (
+                <div key={course.id || course.name} className="flex items-center gap-3">
+                  <span className="text-sm text-gray-700 w-48 truncate shrink-0">{course.name}</span>
+                  <div className="flex-1 h-2.5 bg-gray-100 rounded-full overflow-hidden">
+                    <div
+                      className={`h-full rounded-full ${
+                        (course.relevance ?? 0) >= 70 ? 'bg-green-500' : (course.relevance ?? 0) >= 40 ? 'bg-amber-400' : 'bg-red-400'
+                      }`}
+                      style={{ width: `${Math.min(course.relevance ?? 0, 100)}%` }}
+                    />
+                  </div>
+                  <span className="text-sm font-medium text-gray-600 w-12 text-right shrink-0">{course.relevance != null ? `${Math.round(course.relevance)}%` : 'N/A'}</span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Emerging Skills */}
+      <div className="bg-white rounded-xl border border-gray-200 p-6 mb-8">
+        <h2 className="text-lg font-semibold text-gray-900 mb-1 flex items-center gap-2">
+          <Zap className="w-5 h-5 text-yellow-500" /> Emerging Skills
+        </h2>
+        <p className="text-sm text-gray-500 mb-4">Skills trending in recent postings vs historical data</p>
+        {emerging.length > 0 ? (
+          <div className="space-y-3">
+            {emerging.map((skill) => (
+              <div key={skill.skill} className="flex items-center justify-between p-3 rounded-lg border border-gray-100">
+                <div className="flex items-center gap-3 min-w-0">
+                  <span className="text-sm font-medium text-gray-900">{skill.skill}</span>
+                  {skill.category && (
+                    <span className="text-xs px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-600 shrink-0">{skill.category}</span>
+                  )}
+                </div>
+                <div className="flex items-center gap-3 shrink-0 ml-3">
+                  {skill.adzuna_count != null && (
+                    <span className="text-xs text-green-600 bg-green-50 px-2 py-0.5 rounded">Adzuna: {skill.adzuna_count}</span>
+                  )}
+                  {skill.naukri_count != null && (
+                    <span className="text-xs text-blue-600 bg-blue-50 px-2 py-0.5 rounded">Naukri: {skill.naukri_count}</span>
+                  )}
+                  {skill.emergence_ratio != null && (
+                    <span className="text-xs font-bold text-yellow-700 bg-yellow-50 px-2 py-0.5 rounded-full">{skill.emergence_ratio}x</span>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <p className="text-gray-400 text-sm">No significant emerging skills detected</p>
+        )}
       </div>
 
       {/* Recent Jobs Preview */}

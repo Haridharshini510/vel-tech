@@ -134,3 +134,120 @@ async def get_recent_jobs(
         "page": page,
         "pages": max(1, (total + limit - 1) // limit),
     }
+
+
+@router.get("/emerging-skills")
+async def get_emerging_skills(limit: int = 10, min_ratio: float = 2.0):
+    """Skills that appear disproportionately more in recent Adzuna data
+    than in historical Naukri data, signalling emerging market demand."""
+    db = get_db()
+
+    # Total jobs per source (needed for percentage calculation)
+    total_adzuna = await db.jobs.count_documents({"source": "adzuna"})
+    total_naukri = await db.jobs.count_documents({"source": "naukri"})
+
+    if total_adzuna == 0 or total_naukri == 0:
+        return {"emerging_skills": [], "total_adzuna": total_adzuna,
+                "total_naukri": total_naukri}
+
+    # Aggregate skill counts from Adzuna (recent/live)
+    adzuna_pipeline = [
+        {"$match": {"source": "adzuna", "normalized_skills.0": {"$exists": True}}},
+        {"$unwind": "$normalized_skills"},
+        {"$group": {"_id": "$normalized_skills", "count": {"$sum": 1}}},
+    ]
+    adzuna_results = await db.jobs.aggregate(adzuna_pipeline).to_list(length=500)
+    adzuna_counts = {r["_id"]: r["count"] for r in adzuna_results}
+
+    # Aggregate skill counts from Naukri (historical)
+    naukri_pipeline = [
+        {"$match": {"source": "naukri", "normalized_skills.0": {"$exists": True}}},
+        {"$unwind": "$normalized_skills"},
+        {"$group": {"_id": "$normalized_skills", "count": {"$sum": 1}}},
+    ]
+    naukri_results = await db.jobs.aggregate(naukri_pipeline).to_list(length=500)
+    naukri_counts = {r["_id"]: r["count"] for r in naukri_results}
+
+    # Calculate emergence ratio for every Adzuna skill
+    emerging = []
+    for skill, adzuna_count in adzuna_counts.items():
+        adzuna_pct = adzuna_count / total_adzuna
+        naukri_count = naukri_counts.get(skill, 0)
+        # Use a small floor (0.5 / total_naukri) to avoid division by zero
+        # when the skill is completely absent from Naukri data
+        naukri_pct = max(naukri_count / total_naukri, 0.5 / total_naukri)
+        ratio = round(adzuna_pct / naukri_pct, 2)
+
+        if ratio > min_ratio:
+            emerging.append({
+                "skill": skill,
+                "adzuna_count": adzuna_count,
+                "naukri_count": naukri_count,
+                "adzuna_pct": round(adzuna_pct * 100, 2),
+                "naukri_pct": round((naukri_count / total_naukri) * 100, 2),
+                "emergence_ratio": ratio,
+            })
+
+    # Sort by emergence ratio descending and take top N
+    emerging.sort(key=lambda x: x["emergence_ratio"], reverse=True)
+    emerging = emerging[:limit]
+
+    # Enrich with category from the skills collection
+    for item in emerging:
+        skill_doc = await db.skills.find_one({"canonical_name": item["skill"]})
+        item["category"] = skill_doc["category"] if skill_doc else ""
+
+    return {
+        "emerging_skills": emerging,
+        "total_adzuna": total_adzuna,
+        "total_naukri": total_naukri,
+    }
+
+
+@router.get("/curriculum-overview")
+async def get_curriculum_overview():
+    """Summary of all courses with their relevance scores,
+    highlighting programmes that may need curriculum updates."""
+    db = get_db()
+
+    courses = await db.courses.find(
+        {}, {"name": 1, "relevance_score": 1}
+    ).to_list(length=200)
+
+    total_courses = len(courses)
+    if total_courses == 0:
+        return {
+            "total_courses": 0,
+            "average_relevance": 0,
+            "courses_needing_review": 0,
+            "courses": [],
+        }
+
+    scores = [c.get("relevance_score") for c in courses]
+    valid_scores = [s for s in scores if s is not None]
+    average_relevance = round(sum(valid_scores) / len(valid_scores), 2) if valid_scores else 0
+
+    REVIEW_THRESHOLD = 30.0  # percentage
+    needing_review = [
+        s for s in valid_scores if s < REVIEW_THRESHOLD
+    ]
+
+    course_list = []
+    for c in courses:
+        score = c.get("relevance_score")
+        course_list.append({
+            "id": str(c["_id"]),
+            "name": c.get("name", ""),
+            "relevance_score": score,
+            "needs_review": score is not None and score < REVIEW_THRESHOLD,
+        })
+
+    # Sort: lowest relevance first so at-risk courses are prominent
+    course_list.sort(key=lambda x: x["relevance_score"] if x["relevance_score"] is not None else 999)
+
+    return {
+        "total_courses": total_courses,
+        "average_relevance": average_relevance,
+        "courses_needing_review": len(needing_review),
+        "courses": course_list,
+    }

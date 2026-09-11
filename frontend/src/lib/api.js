@@ -101,3 +101,13 @@ export async function generateRoadmap(courseId, companyName = null, role = null,
   })
   return data
 }
+
+export async function getEmergingSkills() {
+  const { data } = await api.get('/emerging-skills')
+  return data
+}
+
+export async function getCurriculumOverview() {
+  const { data } = await api.get('/curriculum-overview')
+  return data
+}
