@@ -2,13 +2,17 @@ import { useEffect, useState } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell,
+  RadarChart, Radar, PolarGrid, PolarAngleAxis, PolarRadiusAxis,
 } from 'recharts'
 import {
   ArrowLeft, CheckCircle2, XCircle, Search, AlertTriangle, MapPin,
   BookOpen, Target, TrendingUp, ChevronLeft, ChevronRight, GraduationCap,
   RefreshCw, Clock, BookMarked, Rocket, ExternalLink, Sparkles,
+  Download,
 } from 'lucide-react'
 import { getCourse, getCourseAnalysis, getSkillPostings, generateRoadmap } from '../lib/api'
+import { exportGapAnalysisPdf } from '../lib/exportPdf'
+import Skeleton, { ChartSkeleton } from '../components/Skeleton'
 
 function RelevanceGauge({ score }) {
   const radius = 50
@@ -95,13 +99,43 @@ export default function CourseDetail() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600" />
+      <div>
+        <div className="h-4 w-32 bg-gray-200 rounded animate-pulse mb-4" />
+        <div className="bg-white rounded-xl border border-gray-200 p-6 mb-6">
+          <div className="flex items-start justify-between">
+            <div className="space-y-2">
+              <Skeleton className="h-7 w-72" />
+              <Skeleton className="h-4 w-48" />
+            </div>
+            <Skeleton className="h-16 w-28 rounded" />
+          </div>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-5 pt-5 border-t border-gray-100">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <div key={i} className="space-y-1">
+                <Skeleton className="h-7 w-12" />
+                <Skeleton className="h-3 w-20" />
+              </div>
+            ))}
+          </div>
+        </div>
+        <Skeleton className="h-10 w-full rounded-lg mb-6" />
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <ChartSkeleton height={200} />
+          <ChartSkeleton height={200} />
+        </div>
       </div>
     )
   }
 
-  if (!course) return <p>Course not found.</p>
+  if (!course) {
+    return (
+      <div className="text-center py-16">
+        <GraduationCap className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+        <p className="text-gray-500 font-medium">Course not found</p>
+        <Link to="/courses" className="text-indigo-600 text-sm hover:underline mt-2 inline-block">Back to courses</Link>
+      </div>
+    )
+  }
 
   const tabs = [
     { key: 'comparison', label: 'Curriculum vs Demand', icon: BookOpen },
@@ -129,13 +163,25 @@ export default function CourseDetail() {
       </Link>
 
       {/* Header with gauge and stats */}
-      <div className="bg-white rounded-xl border border-gray-200 p-6 mb-6">
-        <div className="flex items-start justify-between">
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900">{course.name}</h1>
+      <div className="bg-white rounded-xl border border-gray-200 p-4 sm:p-6 mb-6">
+        <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+          <div className="min-w-0">
+            <h1 className="text-lg sm:text-2xl font-bold text-gray-900 break-words">{course.name}</h1>
             <p className="text-gray-500 text-sm mt-0.5">{course.institution_type} &middot; {course.duration}</p>
           </div>
-          <RelevanceGauge score={analysis?.relevance_score} />
+          <div className="flex items-center gap-3 shrink-0">
+            {analysis && (
+              <button
+                onClick={() => exportGapAnalysisPdf(course, analysis)}
+                className="flex items-center gap-1.5 px-3 py-2 text-sm text-gray-600 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 hover:border-gray-300 transition-colors"
+                title="Download gap analysis PDF"
+              >
+                <Download className="w-4 h-4" />
+                <span className="hidden sm:inline">Export PDF</span>
+              </button>
+            )}
+            <RelevanceGauge score={analysis?.relevance_score} />
+          </div>
         </div>
 
         {analysis && (
@@ -161,20 +207,20 @@ export default function CourseDetail() {
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-1 mb-6 bg-gray-100 rounded-lg p-1 overflow-x-auto">
+      <div className="flex gap-1 mb-6 bg-gray-100 rounded-lg p-1 overflow-x-auto no-scrollbar">
         {tabs.map((tab) => {
           const Icon = tab.icon
           return (
             <button
               key={tab.key}
               onClick={() => setActiveTab(tab.key)}
-              className={`flex-1 flex items-center justify-center gap-1.5 px-3 sm:px-4 py-2 text-xs sm:text-sm font-medium rounded-md transition-colors whitespace-nowrap ${
+              className={`flex-1 flex items-center justify-center gap-1 sm:gap-1.5 px-2 sm:px-4 py-2 text-[11px] sm:text-sm font-medium rounded-md transition-colors whitespace-nowrap ${
                 activeTab === tab.key
                   ? 'bg-white text-gray-900 shadow-sm'
                   : 'text-gray-500 hover:text-gray-700'
               }`}
             >
-              <Icon className="w-4 h-4 shrink-0" />
+              <Icon className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0" />
               <span className="hidden sm:inline">{tab.label}</span>
               <span className="sm:hidden">{tab.label.split(' ')[0]}</span>
             </button>
@@ -185,6 +231,92 @@ export default function CourseDetail() {
       {/* Tab: Curriculum vs Demand */}
       {activeTab === 'comparison' && analysis && (
         <div className="space-y-6">
+          {/* Gap Visualization — Radar + Summary Bar */}
+          {(() => {
+            const topDemanded = analysis.demanded_skills.slice(0, 10)
+            const radarData = topDemanded.map(d => ({
+              skill: d.skill.length > 12 ? d.skill.slice(0, 11) + '…' : d.skill,
+              fullSkill: d.skill,
+              demand: Math.min(100, Math.round((d.count / (topDemanded[0]?.count || 1)) * 100)),
+              curriculum: analysis.covered_skills.some(s => s.toLowerCase() === d.skill.toLowerCase()) ? Math.min(100, Math.round((d.count / (topDemanded[0]?.count || 1)) * 100)) : 0,
+            }))
+
+            const coveredCount = analysis.covered_skills.length
+            const gapCount = analysis.skill_gaps.length
+            const totalDemanded = analysis.demanded_skills.length
+            const coveredPct = totalDemanded > 0 ? Math.round((coveredCount / (coveredCount + gapCount)) * 100) : 0
+
+            return (
+              <div className="bg-white rounded-xl border border-gray-200 p-4 sm:p-6">
+                <h3 className="font-semibold text-gray-900 mb-1">Curriculum vs Industry Demand</h3>
+                <p className="text-xs text-gray-500 mb-4">How well your curriculum covers the top employer-demanded skills</p>
+
+                <div className="grid grid-cols-1 lg:grid-cols-[1fr_280px] gap-6">
+                  {/* Radar chart */}
+                  <div className="min-h-[280px] sm:min-h-[320px]">
+                    <ResponsiveContainer width="100%" height={320}>
+                      <RadarChart data={radarData} cx="50%" cy="50%" outerRadius="70%">
+                        <PolarGrid stroke="#e5e7eb" />
+                        <PolarAngleAxis dataKey="skill" tick={{ fontSize: 10, fill: '#6b7280' }} />
+                        <PolarRadiusAxis angle={90} domain={[0, 100]} tick={false} axisLine={false} />
+                        <Radar name="Industry Demand" dataKey="demand" stroke="#ef4444" fill="#ef4444" fillOpacity={0.15} strokeWidth={2} />
+                        <Radar name="Curriculum Coverage" dataKey="curriculum" stroke="#22c55e" fill="#22c55e" fillOpacity={0.2} strokeWidth={2} />
+                        <Tooltip
+                          content={({ payload }) => {
+                            if (!payload?.length) return null
+                            const d = payload[0]?.payload
+                            return (
+                              <div className="bg-white border border-gray-200 rounded-lg px-3 py-2 shadow-lg text-xs">
+                                <p className="font-semibold text-gray-900 mb-1">{d.fullSkill}</p>
+                                <p className="text-red-600">Demand: {d.demand}%</p>
+                                <p className="text-green-600">Coverage: {d.curriculum}%</p>
+                              </div>
+                            )
+                          }}
+                        />
+                      </RadarChart>
+                    </ResponsiveContainer>
+                  </div>
+
+                  {/* Summary sidebar */}
+                  <div className="space-y-4">
+                    <div className="bg-gray-50 rounded-lg p-4">
+                      <p className="text-xs text-gray-500 mb-2">Skill Coverage</p>
+                      <div className="flex items-end gap-2 mb-2">
+                        <span className={`text-3xl font-bold ${coveredPct >= 50 ? 'text-green-600' : coveredPct >= 25 ? 'text-amber-600' : 'text-red-600'}`}>{coveredPct}%</span>
+                        <span className="text-xs text-gray-400 pb-1">of demanded skills covered</span>
+                      </div>
+                      <div className="h-2.5 bg-gray-200 rounded-full overflow-hidden">
+                        <div
+                          className={`h-full rounded-full transition-all duration-700 ${coveredPct >= 50 ? 'bg-green-500' : coveredPct >= 25 ? 'bg-amber-500' : 'bg-red-500'}`}
+                          style={{ width: `${coveredPct}%` }}
+                        />
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-3 gap-2">
+                      <div className="bg-green-50 rounded-lg p-3 text-center">
+                        <p className="text-lg font-bold text-green-700">{coveredCount}</p>
+                        <p className="text-[10px] text-green-600">Covered</p>
+                      </div>
+                      <div className="bg-red-50 rounded-lg p-3 text-center">
+                        <p className="text-lg font-bold text-red-700">{gapCount}</p>
+                        <p className="text-[10px] text-red-600">Gaps</p>
+                      </div>
+                      <div className="bg-amber-50 rounded-lg p-3 text-center">
+                        <p className="text-lg font-bold text-amber-700">{analysis.low_demand_skills.length}</p>
+                        <p className="text-[10px] text-amber-600">Low Demand</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-4 text-[11px]">
+                      <span className="flex items-center gap-1.5"><span className="w-3 h-1.5 rounded bg-red-400" /> Industry Demand</span>
+                      <span className="flex items-center gap-1.5"><span className="w-3 h-1.5 rounded bg-green-400" /> Your Curriculum</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )
+          })()}
+
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* Curriculum skills */}
             <div className="bg-white rounded-xl border border-gray-200 p-5">

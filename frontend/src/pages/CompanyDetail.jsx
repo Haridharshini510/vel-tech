@@ -6,12 +6,13 @@ import {
 import {
   ArrowLeft, CheckCircle2, XCircle, MapPin, Search, Briefcase,
   BarChart3, TableProperties, Sparkles, RefreshCw, Clock, BookOpen,
-  BookMarked, Rocket, Target,
+  BookMarked, Rocket, Target, Inbox,
 } from 'lucide-react'
 import {
   getCompanyRoles, getCompanyRoleSkills, compareWithCourse,
   getCourses, generateRoadmap,
 } from '../lib/api'
+import Skeleton, { ListSkeleton } from '../components/Skeleton'
 
 export default function CompanyDetail() {
   const { name } = useParams()
@@ -77,8 +78,32 @@ export default function CompanyDetail() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600" />
+      <div>
+        <Skeleton className="h-4 w-32 mb-4" />
+        <div className="bg-white rounded-xl border border-gray-200 p-6 mb-6">
+          <div className="flex items-center gap-4">
+            <Skeleton className="h-14 w-14 rounded-xl shrink-0" />
+            <div className="space-y-2">
+              <Skeleton className="h-7 w-48" />
+              <Skeleton className="h-4 w-36" />
+            </div>
+          </div>
+        </div>
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+          <div className="bg-white rounded-xl border border-gray-200 p-4 space-y-2">
+            <Skeleton className="h-5 w-20 mb-3" />
+            {Array.from({ length: 5 }).map((_, i) => (
+              <Skeleton key={i} className="h-12 w-full rounded-lg" />
+            ))}
+          </div>
+          <div className="lg:col-span-3">
+            <div className="bg-white rounded-xl border border-gray-200 p-12 text-center">
+              <Skeleton className="h-12 w-12 rounded mx-auto mb-3" />
+              <Skeleton className="h-5 w-48 mx-auto" />
+              <Skeleton className="h-4 w-72 mx-auto mt-2" />
+            </div>
+          </div>
+        </div>
       </div>
     )
   }
@@ -90,16 +115,16 @@ export default function CompanyDetail() {
       </Link>
 
       {/* Company header */}
-      <div className="bg-white rounded-xl border border-gray-200 p-6 mb-6">
-        <div className="flex items-center gap-4">
-          <div className="w-14 h-14 bg-indigo-50 rounded-xl flex items-center justify-center shrink-0">
-            <Briefcase className="w-7 h-7 text-indigo-600" />
+      <div className="bg-white rounded-xl border border-gray-200 p-4 sm:p-6 mb-6">
+        <div className="flex items-center gap-3 sm:gap-4">
+          <div className="w-11 h-11 sm:w-14 sm:h-14 bg-indigo-50 rounded-xl flex items-center justify-center shrink-0">
+            <Briefcase className="w-5 h-5 sm:w-7 sm:h-7 text-indigo-600" />
           </div>
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900">{companyName}</h1>
-            <div className="flex items-center gap-4 mt-1">
-              <span className="text-sm text-gray-500">{totalPostings} total postings</span>
-              <span className="text-sm text-gray-500">{roles.length} unique roles</span>
+          <div className="min-w-0">
+            <h1 className="text-lg sm:text-2xl font-bold text-gray-900 truncate">{companyName}</h1>
+            <div className="flex items-center gap-3 sm:gap-4 mt-1">
+              <span className="text-xs sm:text-sm text-gray-500">{totalPostings} postings</span>
+              <span className="text-xs sm:text-sm text-gray-500">{roles.length} roles</span>
             </div>
           </div>
         </div>

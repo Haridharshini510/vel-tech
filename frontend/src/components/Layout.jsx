@@ -1,9 +1,10 @@
 import { useState } from 'react'
 import { NavLink, Outlet, useLocation } from 'react-router-dom'
-import { LayoutDashboard, Briefcase, GraduationCap, Building2, Activity, Menu, X } from 'lucide-react'
+import { LayoutDashboard, Briefcase, GraduationCap, Building2, Activity, Menu, X, Map } from 'lucide-react'
 
 const navItems = [
   { to: '/', label: 'Dashboard', icon: LayoutDashboard },
+  { to: '/maharashtra', label: 'Youth Intel Map', icon: Map, highlight: true },
   { to: '/recent-jobs', label: 'Recent Jobs', icon: Briefcase },
   { to: '/courses', label: 'Course Analysis', icon: GraduationCap },
   { to: '/companies', label: 'Company Analysis', icon: Building2 },
@@ -50,7 +51,7 @@ export default function Layout() {
           </div>
         </div>
         <nav className="flex-1 p-4 space-y-1">
-          {navItems.map(({ to, label, icon: Icon }) => (
+          {navItems.map(({ to, label, icon: Icon, highlight }) => (
             <NavLink
               key={to}
               to={to}
@@ -59,13 +60,16 @@ export default function Layout() {
               className={({ isActive }) =>
                 `flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
                   isActive
-                    ? 'bg-indigo-50 text-indigo-700'
-                    : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
+                    ? highlight ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-md shadow-indigo-200' : 'bg-indigo-50 text-indigo-700'
+                    : highlight ? 'bg-gradient-to-r from-indigo-50 to-purple-50 text-indigo-600 hover:from-indigo-100 hover:to-purple-100 border border-indigo-100' : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
                 }`
               }
             >
               <Icon className="w-5 h-5" />
               {label}
+              {highlight && (
+                <span className="ml-auto text-[9px] font-bold tracking-wider bg-white/20 px-1.5 py-0.5 rounded text-current uppercase">New</span>
+              )}
             </NavLink>
           ))}
         </nav>

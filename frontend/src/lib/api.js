@@ -111,3 +111,20 @@ export async function getCurriculumOverview() {
   const { data } = await api.get('/curriculum-overview')
   return data
 }
+
+export async function getMaharashtraDistricts(layer = null) {
+  const params = {}
+  if (layer) params.layer = layer
+  const { data } = await api.get('/maharashtra/districts', { params })
+  return data
+}
+
+export async function getDistrictProfile(districtId) {
+  const { data } = await api.get(`/maharashtra/districts/${districtId}`)
+  return data
+}
+
+export async function getMaharashtraSummary() {
+  const { data } = await api.get('/maharashtra/summary')
+  return data
+}

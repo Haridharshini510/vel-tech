@@ -23,6 +23,8 @@ async def connect_db():
     await db.skill_gaps.create_index("course_id")
     await db.skill_gaps.create_index([("course_id", 1), ("demand_frequency", -1)])
     await db.roadmaps.create_index([("course_id", 1), ("company_name", 1), ("role", 1)])
+    await db.districts.create_index("id", unique=True)
+    await db.districts.create_index("region")
 
 
 async def close_db():

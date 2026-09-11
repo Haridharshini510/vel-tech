@@ -7,13 +7,14 @@ import {
 import {
   Briefcase, GraduationCap, Building2, Cpu, AlertTriangle,
   TrendingUp, RefreshCw, Database, ArrowRight, MapPin, Calendar,
-  Zap,
+  Zap, Inbox,
 } from 'lucide-react'
 import {
   getStats, getTrendingSkills, getSourceStats, getJobTrends,
   getCategoryDistribution, getRecentJobs, syncBroadJobs,
   getEmergingSkills, getCurriculumOverview,
 } from '../lib/api'
+import { StatCardsSkeleton, ChartSkeleton } from '../components/Skeleton'
 
 const BAR_COLORS = [
   '#4f46e5', '#6366f1', '#818cf8', '#a5b4fc', '#c7d2fe',
@@ -77,8 +78,23 @@ export default function Dashboard() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600" />
+      <div>
+        <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 mb-8">
+          <div>
+            <div className="h-7 w-64 bg-gray-200 rounded animate-pulse" />
+            <div className="h-4 w-96 bg-gray-200 rounded animate-pulse mt-2" />
+          </div>
+          <div className="h-10 w-32 bg-gray-200 rounded-lg animate-pulse shrink-0" />
+        </div>
+        <StatCardsSkeleton count={6} />
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-8">
+          <ChartSkeleton height={180} />
+          <ChartSkeleton height={180} />
+        </div>
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-8">
+          <div className="lg:col-span-2"><ChartSkeleton height={300} /></div>
+          <ChartSkeleton height={300} />
+        </div>
       </div>
     )
   }
@@ -121,16 +137,16 @@ export default function Dashboard() {
       )}
 
       {/* Stat Cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
+      <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 mb-8">
         {statCards.map(({ label, value, icon: Icon, color }) => (
-          <div key={label} className="bg-white rounded-xl border border-gray-200 p-5">
-            <div className="flex items-center justify-between mb-3">
-              <span className="text-sm text-gray-500">{label}</span>
-              <div className={`p-2 rounded-lg ${color}`}>
-                <Icon className="w-4 h-4" />
+          <div key={label} className="bg-white rounded-xl border border-gray-200 p-3 sm:p-5">
+            <div className="flex items-center justify-between mb-2 sm:mb-3">
+              <span className="text-xs sm:text-sm text-gray-500">{label}</span>
+              <div className={`p-1.5 sm:p-2 rounded-lg ${color}`}>
+                <Icon className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
               </div>
             </div>
-            <p className="text-2xl font-bold text-gray-900">{value.toLocaleString()}</p>
+            <p className="text-lg sm:text-2xl font-bold text-gray-900">{value.toLocaleString()}</p>
           </div>
         ))}
       </div>
@@ -277,22 +293,22 @@ export default function Dashboard() {
       )}
 
       {/* Emerging Skills */}
-      <div className="bg-white rounded-xl border border-gray-200 p-6 mb-8">
-        <h2 className="text-lg font-semibold text-gray-900 mb-1 flex items-center gap-2">
+      <div className="bg-white rounded-xl border border-gray-200 p-4 sm:p-6 mb-8">
+        <h2 className="text-base sm:text-lg font-semibold text-gray-900 mb-1 flex items-center gap-2">
           <Zap className="w-5 h-5 text-yellow-500" /> Emerging Skills
         </h2>
-        <p className="text-sm text-gray-500 mb-4">Skills trending in recent postings vs historical data</p>
+        <p className="text-xs sm:text-sm text-gray-500 mb-4">Skills trending in recent postings vs historical data</p>
         {emerging.length > 0 ? (
-          <div className="space-y-3">
+          <div className="space-y-2 sm:space-y-3">
             {emerging.map((skill) => (
-              <div key={skill.skill} className="flex items-center justify-between p-3 rounded-lg border border-gray-100">
+              <div key={skill.skill} className="flex flex-col sm:flex-row sm:items-center justify-between p-3 rounded-lg border border-gray-100 gap-2">
                 <div className="flex items-center gap-3 min-w-0">
                   <span className="text-sm font-medium text-gray-900">{skill.skill}</span>
                   {skill.category && (
                     <span className="text-xs px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-600 shrink-0">{skill.category}</span>
                   )}
                 </div>
-                <div className="flex items-center gap-3 shrink-0 ml-3">
+                <div className="flex items-center gap-2 sm:gap-3 shrink-0">
                   {skill.adzuna_count != null && (
                     <span className="text-xs text-green-600 bg-green-50 px-2 py-0.5 rounded">Adzuna: {skill.adzuna_count}</span>
                   )}
@@ -307,21 +323,30 @@ export default function Dashboard() {
             ))}
           </div>
         ) : (
-          <p className="text-gray-400 text-sm">No significant emerging skills detected</p>
+          <div className="text-center py-6">
+            <Zap className="w-8 h-8 text-gray-300 mx-auto mb-2" />
+            <p className="text-gray-400 text-sm">No emerging skills detected yet. Sync more jobs to see trends.</p>
+          </div>
         )}
       </div>
 
       {/* Recent Jobs Preview */}
-      <div className="bg-white rounded-xl border border-gray-200 p-6 mb-8">
+      <div className="bg-white rounded-xl border border-gray-200 p-4 sm:p-6 mb-8">
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-semibold text-gray-900">Recent Job Postings</h2>
+          <h2 className="text-base sm:text-lg font-semibold text-gray-900">Recent Job Postings</h2>
           <Link to="/recent-jobs" className="flex items-center gap-1 text-sm text-indigo-600 hover:text-indigo-700 font-medium">
             View all <ArrowRight className="w-4 h-4" />
           </Link>
         </div>
+        {recentJobs.length === 0 ? (
+          <div className="text-center py-8">
+            <Inbox className="w-10 h-10 text-gray-300 mx-auto mb-2" />
+            <p className="text-gray-400 text-sm">No job postings yet. Click "Sync Live Jobs" to get started.</p>
+          </div>
+        ) : (
         <div className="space-y-3">
           {recentJobs.map((job) => (
-            <div key={job.id} className="flex items-center justify-between p-3 rounded-lg border border-gray-100">
+            <div key={job.id} className="flex flex-col sm:flex-row sm:items-center justify-between p-3 rounded-lg border border-gray-100 gap-2">
               <div className="min-w-0 flex-1">
                 <p className="font-medium text-gray-900 text-sm truncate">{job.title}</p>
                 <div className="flex items-center gap-3 text-xs text-gray-500 mt-0.5">
@@ -329,7 +354,7 @@ export default function Dashboard() {
                   {job.location && <span className="flex items-center gap-1 truncate"><MapPin className="w-3 h-3 shrink-0" />{job.location}</span>}
                 </div>
               </div>
-              <div className="flex items-center gap-2 shrink-0 ml-3">
+              <div className="flex items-center gap-2 shrink-0">
                 {job.posted_date && (
                   <span className="text-xs text-gray-400 flex items-center gap-1">
                     <Calendar className="w-3 h-3" />{new Date(job.posted_date).toLocaleDateString()}
@@ -342,7 +367,39 @@ export default function Dashboard() {
             </div>
           ))}
         </div>
+        )}
       </div>
+
+      {/* Maharashtra Intelligence Map CTA */}
+      <Link
+        to="/maharashtra"
+        className="block bg-gradient-to-r from-indigo-600 via-purple-600 to-indigo-700 rounded-2xl p-6 sm:p-8 mb-8 hover:from-indigo-500 hover:via-purple-500 hover:to-indigo-600 transition-all shadow-lg shadow-indigo-200/30 group"
+      >
+        <div className="flex items-center justify-between">
+          <div>
+            <div className="flex items-center gap-2 mb-2">
+              <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+              <span className="text-indigo-200 text-xs font-semibold tracking-wider uppercase">X-Factor Feature</span>
+            </div>
+            <h3 className="text-white text-xl sm:text-2xl font-black mb-2">Maharashtra Youth Intelligence Map</h3>
+            <p className="text-indigo-200 text-sm max-w-lg">
+              District-level intelligence on youth challenges — from education & migration to skill gaps.
+              See problems, understand causes, simulate interventions, and generate action plans.
+            </p>
+            <div className="flex items-center gap-4 mt-4 text-xs text-indigo-300">
+              <span>36 Districts</span>
+              <span className="w-1 h-1 rounded-full bg-indigo-400" />
+              <span>6 Intelligence Layers</span>
+              <span className="w-1 h-1 rounded-full bg-indigo-400" />
+              <span>What-If Simulator</span>
+            </div>
+          </div>
+          <div className="hidden sm:flex items-center gap-2 text-white/80 group-hover:text-white transition-colors">
+            <span className="text-sm font-medium">Explore</span>
+            <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+          </div>
+        </div>
+      </Link>
 
       {/* Quick Actions */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

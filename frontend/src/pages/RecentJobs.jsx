@@ -3,6 +3,7 @@ import {
   Search, MapPin, Filter, ChevronLeft, ChevronRight, Briefcase, Calendar,
 } from 'lucide-react'
 import { getRecentJobs } from '../lib/api'
+import { JobCardSkeleton } from '../components/Skeleton'
 
 export default function RecentJobs() {
   const [jobs, setJobs] = useState([])
@@ -55,8 +56,8 @@ export default function RecentJobs() {
   return (
     <div>
       <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">Job Postings</h1>
-        <p className="text-gray-500 mt-1">Browse and search {total.toLocaleString()} job postings from multiple sources</p>
+        <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Job Postings</h1>
+        <p className="text-gray-500 text-sm mt-1">Browse and search {total.toLocaleString()} job postings from multiple sources</p>
       </div>
 
       {/* Filters */}
@@ -106,8 +107,8 @@ export default function RecentJobs() {
 
       {/* Results */}
       {loading ? (
-        <div className="flex items-center justify-center h-48">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600" />
+        <div className="space-y-3">
+          {Array.from({ length: 6 }).map((_, i) => <JobCardSkeleton key={i} />)}
         </div>
       ) : jobs.length === 0 ? (
         <div className="text-center py-16 text-gray-400">
@@ -117,31 +118,31 @@ export default function RecentJobs() {
       ) : (
         <div className="space-y-3">
           {jobs.map(job => (
-            <div key={job.id} className="bg-white rounded-xl border border-gray-200 p-4 hover:border-indigo-200 transition-colors">
-              <div className="flex items-start justify-between gap-4">
+            <div key={job.id} className="bg-white rounded-xl border border-gray-200 p-3 sm:p-4 hover:border-indigo-200 transition-colors">
+              <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2 sm:gap-4">
                 <div className="min-w-0 flex-1">
-                  <h3 className="font-medium text-gray-900 truncate">{job.title}</h3>
-                  <div className="flex items-center gap-4 mt-1 text-sm text-gray-500 flex-wrap">
+                  <h3 className="font-medium text-gray-900 text-sm sm:text-base truncate">{job.title}</h3>
+                  <div className="flex items-center gap-2 sm:gap-4 mt-1 text-xs sm:text-sm text-gray-500 flex-wrap">
                     <span className="text-indigo-600 font-medium">{job.company}</span>
                     {job.location && (
                       <span className="flex items-center gap-1">
                         <MapPin className="w-3.5 h-3.5 shrink-0" />{job.location}
                       </span>
                     )}
-                    {job.category && <span className="text-gray-400">{job.category}</span>}
+                    {job.category && <span className="text-gray-400 hidden sm:inline">{job.category}</span>}
                   </div>
                   {job.normalized_skills?.length > 0 && (
                     <div className="flex flex-wrap gap-1.5 mt-2">
-                      {job.normalized_skills.slice(0, 8).map(s => (
+                      {job.normalized_skills.slice(0, 5).map(s => (
                         <span key={s} className="text-xs px-2 py-0.5 bg-indigo-50 text-indigo-600 rounded-full">{s}</span>
                       ))}
-                      {job.normalized_skills.length > 8 && (
-                        <span className="text-xs text-gray-400">+{job.normalized_skills.length - 8}</span>
+                      {job.normalized_skills.length > 5 && (
+                        <span className="text-xs text-gray-400">+{job.normalized_skills.length - 5}</span>
                       )}
                     </div>
                   )}
                 </div>
-                <div className="flex flex-col items-end gap-1.5 shrink-0">
+                <div className="flex sm:flex-col items-center sm:items-end gap-2 sm:gap-1.5 shrink-0">
                   <span className={`text-xs px-2.5 py-0.5 rounded-full font-medium ${
                     job.source === 'adzuna' ? 'bg-green-50 text-green-600' : 'bg-blue-50 text-blue-600'
                   }`}>{job.source}</span>
@@ -161,9 +162,9 @@ export default function RecentJobs() {
 
       {/* Pagination */}
       {totalPages > 1 && (
-        <div className="flex items-center justify-between mt-6 bg-white rounded-xl border border-gray-200 p-4">
-          <p className="text-sm text-gray-500">
-            Page {page} of {totalPages} ({total.toLocaleString()} jobs)
+        <div className="flex items-center justify-between mt-6 bg-white rounded-xl border border-gray-200 p-3 sm:p-4">
+          <p className="text-xs sm:text-sm text-gray-500">
+            <span className="hidden sm:inline">Page </span>{page}/{totalPages}<span className="hidden sm:inline"> ({total.toLocaleString()} jobs)</span>
           </p>
           <div className="flex items-center gap-2">
             <button

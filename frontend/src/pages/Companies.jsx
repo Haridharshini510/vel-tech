@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { Building2, ArrowRight, Search, Briefcase, ArrowUpDown } from 'lucide-react'
+import { Building2, ArrowRight, Search, Briefcase, ArrowUpDown, Inbox } from 'lucide-react'
 import { getCompanies } from '../lib/api'
+import { CompanyCardSkeleton, EmptyState } from '../components/Skeleton'
 
 export default function Companies() {
   const [companies, setCompanies] = useState([])
@@ -22,8 +23,18 @@ export default function Companies() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600" />
+      <div>
+        <div className="flex items-start justify-between mb-6">
+          <div>
+            <div className="h-7 w-48 bg-gray-200 rounded animate-pulse" />
+            <div className="h-4 w-72 bg-gray-200 rounded animate-pulse mt-2" />
+          </div>
+          <div className="h-10 w-32 bg-gray-200 rounded-lg animate-pulse" />
+        </div>
+        <div className="h-10 w-full bg-gray-200 rounded-lg animate-pulse mb-6" />
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          {Array.from({ length: 6 }).map((_, i) => <CompanyCardSkeleton key={i} />)}
+        </div>
       </div>
     )
   }
@@ -32,8 +43,8 @@ export default function Companies() {
     <div>
       <div className="flex items-start justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Company Analysis</h1>
-          <p className="text-gray-500 mt-1">Explore what {companies.length} employers expect from candidates</p>
+          <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Company Analysis</h1>
+          <p className="text-gray-500 text-sm mt-1">Explore what {companies.length} employers expect from candidates</p>
         </div>
         <button
           onClick={() => setSortBy(s => s === 'jobs' ? 'name' : 'jobs')}

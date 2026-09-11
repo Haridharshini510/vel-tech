@@ -11,6 +11,7 @@ from app.api.skills import router as skills_router
 from app.api.companies import router as companies_router
 from app.api.roadmap import router as roadmap_router
 from app.api.jobs import router as jobs_router
+from app.api.maharashtra import router as maharashtra_router
 
 
 @asynccontextmanager
@@ -41,6 +42,7 @@ app.include_router(skills_router, prefix="/api")
 app.include_router(companies_router, prefix="/api")
 app.include_router(roadmap_router, prefix="/api")
 app.include_router(jobs_router, prefix="/api")
+app.include_router(maharashtra_router, prefix="/api")
 
 
 @app.exception_handler(Exception)

@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { GraduationCap, ArrowRight, ArrowUpDown } from 'lucide-react'
+import { GraduationCap, ArrowRight, ArrowUpDown, Inbox } from 'lucide-react'
 import { getCourses } from '../lib/api'
+import { CourseCardSkeleton, EmptyState } from '../components/Skeleton'
 
 function RelevanceRing({ score, size = 64 }) {
   const radius = (size - 8) / 2
@@ -58,8 +59,17 @@ export default function Courses() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600" />
+      <div>
+        <div className="flex items-start justify-between mb-6">
+          <div>
+            <div className="h-7 w-48 bg-gray-200 rounded animate-pulse" />
+            <div className="h-4 w-80 bg-gray-200 rounded animate-pulse mt-2" />
+          </div>
+          <div className="h-10 w-32 bg-gray-200 rounded-lg animate-pulse" />
+        </div>
+        <div className="grid grid-cols-1 gap-4">
+          {Array.from({ length: 4 }).map((_, i) => <CourseCardSkeleton key={i} />)}
+        </div>
       </div>
     )
   }
@@ -68,18 +78,21 @@ export default function Courses() {
     <div>
       <div className="flex items-start justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Course Analysis</h1>
-          <p className="text-gray-500 mt-1">Select a course to analyze its alignment with employer demand</p>
+          <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Course Analysis</h1>
+          <p className="text-gray-500 text-sm mt-1">Select a course to analyze its alignment with employer demand</p>
         </div>
         <button
           onClick={() => setSortAsc(!sortAsc)}
           className="flex items-center gap-2 px-3 py-2 text-sm text-gray-600 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
         >
           <ArrowUpDown className="w-4 h-4" />
-          {sortAsc ? 'Lowest first' : 'Highest first'}
+          <span className="hidden sm:inline">{sortAsc ? 'Lowest first' : 'Highest first'}</span>
         </button>
       </div>
 
+      {sorted.length === 0 ? (
+        <EmptyState icon={Inbox} title="No courses found" description="Add courses via the backend to start analyzing curriculum-market alignment" />
+      ) : (
       <div className="grid grid-cols-1 gap-4">
         {sorted.map((course) => {
           const score = course.relevance_score
@@ -114,6 +127,7 @@ export default function Courses() {
           )
         })}
       </div>
+      )}
     </div>
   )
 }
